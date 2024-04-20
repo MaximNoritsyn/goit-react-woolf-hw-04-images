@@ -7,7 +7,7 @@ import { Button } from './button/button';
 import { Loader } from './loader/loader';
 import { Modal } from './modal/modal';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 export const App = () => {
 
@@ -16,7 +16,7 @@ export const App = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalImage, setModalImage] = useState(null);
-  const [canLoadMore, setCanLoadMore] = useState(true);
+  const [canLoadMore, setCanLoadMore] = useState(false);
 
   const submitSearch = (e) => {
     e.preventDefault();
@@ -30,26 +30,26 @@ export const App = () => {
     setModalImage(null);
   }
 
-  const loadImages = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { hits, canLoadMore } = await searchImages(query, page)
-      setImages((prevImages) => [...prevImages, ...hits]);
-      setCanLoadMore(canLoadMore);
-    }
-    catch (error) {
-      alert(error.message)
-    }
-    finally {
-      setLoading(false);
-    }
-  }, [query, page])
-
   useEffect(() => {
+    const loadImages = async () => {
+      setLoading(true);
+      try {
+        const { hits, canLoadMore } = await searchImages(query, page)
+        setImages((prevImages) => [...prevImages, ...hits]);
+        setCanLoadMore(canLoadMore);
+      }
+      catch (error) {
+        alert(error.message)
+      }
+      finally {
+        setLoading(false);
+      }
+    }
+
     if (query) {
       loadImages()
     }
-  }, [query, page, loadImages])
+  }, [query, page])
 
   const nextPage = () => {
     setPage((prevPage) => prevPage + 1);
