@@ -7,67 +7,59 @@ import { Button } from './button/button';
 import { Loader } from './loader/loader';
 import { Modal } from './modal/modal';
 
-import { Component } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-export class App extends Component {
+export const App = () => {
 
-  state = {
-    query: '',
-    page: 1,
-    images: [],
-    canLoadMore: false,
-    loading: false,
-    modalImage: null,
-  };
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [modalImage, setModalImage] = useState(null);
+  const [canLoadMore, setCanLoadMore] = useState(true);
 
-  submitSearch = (e) => {
+  const submitSearch = (e) => {
     e.preventDefault();
     const query = e.target.elements.query.value.trim();
-    this.setState({
-      query: query,
-      page: 1,
-      images: [],
-    });
+    setQuery(query);
+    setPage(1);
+    setImages([]);
   }
 
-  setModalImage = (image) => {
-    this.setState({ modalImage: image })
+  const removeModalImage = () => {
+    setModalImage(null);
   }
 
-  removeModalImage = () => {
-    this.setState({ modalImage: null })
-  }
-
-  async loadImages() {
-    this.setState({ loading: true })
+  const loadImages = useCallback(async () => {
+    setLoading(true);
     try {
-      const { hits, canLoadMore } = await searchImages(this.state.query, this.state.page)
-      this.setState((prevState) => ({
-        images: [...prevState.images, ...hits],
-        canLoadMore: canLoadMore
-      }))
+      const { hits, canLoadMore } = await searchImages(query, page)
+      setImages((prevImages) => [...prevImages, ...hits]);
+      setCanLoadMore(canLoadMore);
     }
     catch (error) {
       alert(error.message)
     }
     finally {
-      this.setState({ loading: false })
+      setLoading(false);
     }
+  }, [query, page])
+
+  useEffect(() => {
+    if (query) {
+      loadImages()
+    }
+  }, [query, page, loadImages])
+
+  const nextPage = () => {
+    setPage((prevPage) => prevPage + 1);
   }
 
-  componentDidUpdate(_, prevState){
-    if(this.state.page !== prevState.page || this.state.query!== prevState.query ){
-      this.loadImages()
-    }
-  }
-
-  render() {
-    return <div className={css.app}>
-      <SearchBar submitSearch={this.submitSearch} />
-      <ImageGallery images={this.state.images} setModalImage={this.setModalImage} />
-      <Loader visible={this.state.loading} />
-      { this.state.modalImage && <Modal {...this.state.modalImage} removeModalImage={this.removeModalImage} />}
-      { this.state.canLoadMore && this.state.images && <Button onClick={() => this.setState((prevState) => ({ page: prevState.page + 1 }))} text="Load more" />}
-    </div>
-  };
+  return <div className={css.app}>
+    <SearchBar submitSearch={submitSearch} />
+    <ImageGallery images={images} setModalImage={setModalImage} />
+    <Loader visible={loading} />
+    { modalImage && <Modal {...modalImage} removeModalImage={removeModalImage} />}
+    { canLoadMore && images && <Button onClick={nextPage} text="Load more" />}
+  </div>
 };
